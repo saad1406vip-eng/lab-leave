@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab Leave - إجازات المختبر</title>
+<style>
+  * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+  body { background: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+  header { background: #1a3a5c; color: white; padding: 15px 25px; border-radius: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+  header h1 { margin: 0; font-size: 22px; }
+  header h1 span.ar { font-size: 14px; opacity: 0.9; margin-right: 10px; font-weight: normal; }
+  header span { font-size: 13px; opacity: 0.8; }
+  .container { max-width: 1300px; margin: auto; }
+  .card { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .card h2 { margin-top: 0; color: #1a3a5c; border-bottom: 2px solid #e0e6ed; padding-bottom: 10px; font-size: 18px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { border: 1px solid #d0d7de; padding: 6px 8px; text-align: center; }
+  th { background: #1a3a5c; color: white; }
+  tr:nth-child(even) { background: #f9fbfd; }
+  .status-green { background: #d4edda !important; }
+  .status-yellow { background: #fff3cd !important; }
+  .status-red { background: #f8d7da !important; color: #721c24; font-weight: bold; }
+  button { background: #1a3a5c; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; margin: 3px; transition: 0.2s; }
+  button:hover { background: #2c5282; }
+  button:disabled { background: #95a5a6; cursor: not-allowed; }
+  button.danger { background: #c0392b; }
+  button.success { background: #27ae60; }
+  button.warning { background: #e67e22; }
+  select, input { padding: 7px; border: 1px solid #ccc; border-radius: 5px; font-size: 13px; margin: 3px; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .legend { display: flex; gap: 15px; margin: 10px 0; font-size: 13px; flex-wrap: wrap; }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+  .dot.green { background: #27ae60; } .dot.yellow { background: #f1c40f; } .dot.red { background: #e74c3c; }
+  .alert-box { background: #fff3cd; border-right: 4px solid #f1c40f; padding: 12px; border-radius: 6px; margin: 10px 0; }
+  .alert-box.danger { background: #f8d7da; border-right-color: #e74c3c; }
+  .alert-box.success { background: #d4edda; border-right-color: #27ae60; }
+  .alert-box.info { background: #d1ecf1; border-right-color: #17a2b8; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+  .badge.green { background: #27ae60; color: white; }
+  .badge.red { background: #e74c3c; color: white; }
+  .badge.yellow { background: #f1c40f; color: #333; }
+  #printArea { display: none; }
+  @media print {
+    body * { visibility: hidden; }
+    #printArea, #printArea * { visibility: visible; }
+    #printArea { display: block !important; position: absolute; top: 0; left: 0; width: 100%; padding: 20px; }
+    @page { size: A4; margin: 15mm; }
+  }
+  .print-form { border: 2px solid #000; padding: 25px; font-size: 14px; line-height: 2; }
+  .print-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1a3a5c; padding-bottom: 10px; margin-bottom: 15px; }
+  .print-header .logo-box { width: 120px; text-align: center; }
+  .print-header .logo-box img { width: 100px; height: auto; }
+  .print-header .title-box { text-align: center; flex: 1; padding: 0 15px; }
+  .print-header .title-box h1 { margin: 0; font-size: 18px; color: #1a3a5c; }
+  .print-header .title-box h2 { margin: 2px 0; font-size: 14px; color: #333; }
+  .print-header .title-box p { margin: 2px 0; font-size: 12px; color: #555; }
+  .print-header .info-box { width: 120px; text-align: left; font-size: 11px; color: #555; }
+  .print-form h1.form-title { text-align: center; font-size: 20px; margin: 20px 0 15px; border-bottom: 1px solid #000; padding-bottom: 5px; }
+  .print-form .field { margin: 15px 0; }
+  .print-form .signatures { display: flex; justify-content: space-between; margin-top: 60px; gap: 10px; }
+  .print-form .signatures div { text-align: center; flex: 1; }
+  .print-form .line { border-bottom: 1px dotted #000; display: inline-block; min-width: 180px; }
+  .print-form .footer-note { margin-top: 40px; text-align: center; font-size: 11px; color: #555; }
+  .file-upload { border: 2px dashed #1a3a5c; padding: 20px; text-align: center; border-radius: 8px; background: #f8fafc; cursor: pointer; }
+  .file-upload:hover { background: #eef4fb; }
+  .file-upload input { display: none; }
+  .file-upload label { cursor: pointer; font-weight: bold; color: #1a3a5c; }
+  .log-table { max-height: 400px; overflow-y: auto; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div>
+      <h1>Lab Leave <span class="ar">| إجازات المختبر</span></h1>
+      <span>نظام إدارة إجازات قسم المختبر وبنك الدم - مستشفى سبت العلايا العام</span>
+    </div>
+    <div>
+      <span>المدير: سعد علي القرني</span>
+    </div>
+  </header>
+
+  <!-- 1. رفع الجدول الشهري -->
+  <div class="card">
+    <h2>📤 رفع الجدول الشهري (إلزامي قبل الموافقة على أي إجازة)</h2>
+    <div class="file-upload">
+      <input type="file" id="scheduleFile" accept=".csv,.txt" onchange="handleScheduleUpload(event)">
+      <label for="scheduleFile">📁 اضغط هنا لرفع ملف الجدول (CSV)</label>
+      <p style="font-size:12px; color:#666; margin-top:10px;">
+        الملف يجب أن يكون بصيغة CSV، الأعمدة: <b>الاسم، القسم، 1، 2، 3، ... 31</b><br>
+        القيم المسموحة: M (صباحي)، E (مسائي)، N (ليلي)، O (أوف)
+      </p>
+    </div>
+    <div class="row" style="margin-top:15px;">
+      <button onclick="loadSampleSchedule()">📥 تحميل جدول تجريبي (أكتوبر 2026)</button>
+      <button class="danger" onclick="clearSchedule()">🗑️ مسح الجدول الحالي</button>
+    </div>
+    <div id="scheduleStatus"></div>
+  </div>
+
+  <!-- 2. عرض الموظفين -->
+  <div class="card">
+    <h2>👥 فريق العمل</h2>
+    <div class="row">
+      <label>القسم: 
+        <select id="filterSection" onchange="renderEmployees()">
+          <option value="all">الكل</option>
+          <option value="CHEM/VIRO/HERMONE">كيمياء + فيروسات + هرمونات</option>
+          <option value="BB/HEMA">بنك الدم + هيماتولوجي</option>
+          <option value="MICRO/PARA">ميكرو + بارا</option>
+          <option value="CHEM/REC">CHEM/REC (المدير والمشرف)</option>
+        </select>
+      </label>
+      <button onclick="renderEmployees()">🔄 تحديث</button>
+    </div>
+    <table id="empTable">
+      <thead>
+        <tr>
+          <th>#</th><th>الاسم</th><th>الرقم الوظيفي</th><th>القسم</th>
+          <th>الدور</th><th>رصيد اضطرارية</th><th>رصيد اعتيادية</th><th>إجراء</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- 3. تحليل الأمان -->
+  <div class="card">
+    <h2>🔍 تحليل الأمان اليومي (بناءً على الجدول المرفوع)</h2>
+    <div class="legend">
+      <span><span class="dot green"></span> آمن (فوق الحد الأدنى)</span>
+      <span><span class="dot yellow"></span> على الحد الأدنى</span>
+      <span><span class="dot red"></span> خطر (تحت الحد الأدنى)</span>
+    </div>
+    <button onclick="analyzeSchedule()">🔍 تحليل الأمان</button>
+    <div id="scheduleResult"></div>
+  </div>
+
+  <!-- 4. طلب إجازة -->
+  <div class="card">
+    <h2>📝 طلب إجازة (محاكاة + خصم من الرصيد)</h2>
+    <div class="row">
+      <label>الموظف: <select id="leaveEmp"></select></label>
+      <label>نوع الإجازة: 
+        <select id="leaveType">
+          <option value="emergency">اضطرارية</option>
+          <option value="annual">اعتيادية</option>
+        </select>
+      </label>
+      <label>من: <input type="date" id="leaveFrom"></label>
+      <label>إلى: <input type="date" id="leaveTo"></label>
+      <button onclick="simulateLeave()">🔎 محاكاة الطلب</button>
+    </div>
+    <div id="leaveResult"></div>
+  </div>
+
+  <!-- 5. سجل الإجازات -->
+  <div class="card">
+    <h2>📋 سجل الإجازات المعتمدة</h2>
+    <div class="log-table">
+      <table id="logTable">
+        <thead>
+          <tr>
+            <th>#</th><th>الموظف</th><th>النوع</th><th>من</th><th>إلى</th>
+            <th>الأيام</th><th>المغطي</th><th>تاريخ التسجيل</th><th>إجراء</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <button class="danger" onclick="clearLog()">🗑️ مسح السجل</button>
+  </div>
+</div>
+
+<!-- منطقة الطباعة A4 -->
+<div id="printArea">
+  <div class="print-form" id="printFormContent"></div>
+</div>
+
+<script>
+/* ============================================================
+   1. بيانات الموظفين (18 موظفاً نشطاً) - الأقسام مدمجة
+   ============================================================ */
+const employees = [
+  // CHEM/REC = المدير والمشرف (استقبال فقط)
+  {id:"01231051", name:"سعد علي سعد القرني", section:"CHEM/REC", role:"رئيس القسم", emergency:5, annual:30, usedEmergency:0, usedAnnual:0},
+  {id:"7670327", name:"بدر محمد ماكن القرني", section:"CHEM/REC", role:"مشرف فنيين", emergency:5, annual:30, usedEmergency:0, usedAnnual:0},
+  // CHEM + VIRO + HERMONE (قسم واحد)
+  {id:"01231243", name:"محمد دخيل الله محمد الغامدي", section:"CHEM/VIRO/HERMONE", role:"فني", emergency:5, annual:30, usedEmergency:0, usedAnnual:0},
+  {id:"66540", name:"حسام سعيد عبدالله القرني", section:"CHEM/VIRO/HERMONE", role:"فني", emergency:5, annual:30, usedEmergency:0, usedAnnual:0},
+  {id:"7670350", name:"منصور محمد منصور القرني", section:"CHEM/VIRO/HERMONE", role:"فني", emergency:5, annual:30, usedEmergency:0, usedAnnual:0},
+  {id:"7221400", name:"محمد سهلان سعد العلياني", section:"CHEM/VIRO/HERMONE", role:"فني", emergency:5, annual:30, usedEmergency:0, usedAnnual:0},
+  {id:"7219250", name:"مسفر عائض محمد القرني", section:"CHEM/VIRO/HERMONE", role:"فني", emergency:5, annual:30, usedEmergency:0, usedAnnual:0},
+  {id:"7221389", name:"محمد ناصر محمد القرني", section:"CHEM/VIRO/HERMONE", role:"فني", emergency:5, annual:30, usedEmergency:0, usedAnnual:0},
+  // BB + HEMA (قسم واحد)
+  {id:"7245417", name:"د. حاتم خليفة كرار", section:"BB/HEMA", role:"مرجع طبي + جودة", emergency:0, annual:0, usedEmergency:0, usedAnnual:0},
+  {id:"46139", name:"فهد عبدالله محمد القرني", section:"BB/HEMA", role:"فني", emergency:5, annual:30, usedEmergency:0, usedAnnual:0},
+  {id:"0124959", name:"محمد سعد عبدالله القرني", section:"BB/HEMA", role:"فني", emergency:5, annual:30, usedEmergency:0, usedAnnual:0},
+  {id:"62526", name:"محمد صالح محمد الخثعمي", section:"BB/HEMA", role:"فني", emergency:5, annual:30, usedEmergency:0, usedAnnual:0},
+  {id:"7707014", name:"سعد عيد سعيد ال سعد القرني", section:"BB/HEMA", role:"فني", emergency:5, annual:30, usedEmergency:0, usedAnnual:0},
+  {id:"0123074", name:"سلطان محمد دخيل القرني", section:"BB/HEMA", role:"فني", emergency:5, annual:30, usedEmergency:0, usedAnnual:0},
+  {id:"7241475", name:"نايف عبدالله محبوب القرني", section:"BB/HEMA", role:"فني", emergency:5, annual:30, usedEmergency:0, usedAnnual:0},
+  // MICRO + PARA (قسم واحد)
+  {id:"7669825", name:"عبدالعزيز راشد جديع البريدي", section:"MICRO/PARA", role:"فني", emergency:5, annual:30, usedEmergency:0, usedAnnual:0},
+  {id:"65269", name:"محمد خلف أحمد الخثعمي", section:"MICRO/PARA", role:"فني", emergency:5, annual:30, usedEmergency:0, usedAnnual:0},
+  {id:"7670368", name:"نايف محمد عبدالله العلياني", section:"MICRO/PARA", role:"فني", emergency:5, annual:30, usedEmergency:0, usedAnnual:0}
+];
+
+/* ============================================================
+   2. الحد الأدنى الآمن (الأقسام المدمجة)
+   ============================================================ */
+const sectionMin = {
+  "CHEM/VIRO/HERMONE": 3,  // 2 كيمياء + 1 فيروسات/هرمون
+  "BB/HEMA": 2,             // 1 بنك دم + 1 هيماتولوجي
+  "MICRO/PARA": 1,
+  "CHEM/REC": 1
+};
+
+/* ============================================================
+   3. متغيرات عامة
+   ============================================================ */
+let scheduleData = {};   // { "2026-10-01": { "CHEM/VIRO/HERMONE": [ids], ... } }
+let leaveLog = [];       // سجل الإجازات
+let currentMonth = "";   // الشهر الحالي المرفوع
+
+/* ============================================================
+   4. رفع الجدول الشهري (CSV)
+   ============================================================ */
+function handleScheduleUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    parseCSV(text);
+  };
+  reader.readAsText(file, "UTF-8");
+}
+
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) {
+    document.getElementById("scheduleStatus").innerHTML = `<div class="alert-box danger">❌ الملف فارغ أو غير صالح</div>`;
+    return;
+  }
+
+  // السطر الأول: العناوين (الاسم، القسم، 1، 2، ...)
+  const headers = lines[0].split(",").map(h => h.trim());
+  const dayColumns = [];
+  headers.forEach((h, i) => {
+    if (i >= 2 && !isNaN(parseInt(h))) dayColumns.push({ index: i, day: parseInt(h) });
+  });
+
+  if (dayColumns.length === 0) {
+    document.getElementById("scheduleStatus").innerHTML = `<div class="alert-box danger">❌ لم يتم العثور على أعمدة الأيام (1، 2، 3...)</div>`;
+    return;
+  }
+
+  // تحديد الشهر والسنة (نفترض أكتوبر 2026 افتراضياً، ويمكن تعديله)
+  const year = 2026, month = 10;
+
+  scheduleData = {};
+
+  // تهيئة الأيام
+  dayColumns.forEach(dc => {
+    const dateKey = `${year}-${String(month).padStart(2,'0')}-${String(dc.day).padStart(2,'0')}`;
+    scheduleData[dateKey] = { "CHEM/VIRO/HERMONE": [], "BB/HEMA": [], "MICRO/PARA": [], "CHEM/REC": [] };
+  });
+
+  // قراءة صفوف الموظفين
+  let matchedCount = 0;
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(",").map(c => c.trim());
+    if (cols.length < 3) continue;
+    const empName = cols[0];
+    const empSection = cols[1];
+
+    // البحث عن الموظف
+    const emp = employees.find(e => e.name === empName || e.name.includes(empName) || empName.includes(e.name.split(" ")[0] + " " + e.name.split(" ")[1]));
+    if (!emp) continue;
+    matchedCount++;
+
+    // تحديد القسم في الجدول (بناءً على القسم المذكور في الملف)
+    let sectionKey = emp.section;
+    if (empSection.includes("CHEM") && empSection.includes("VIRO")) sectionKey = "CHEM/VIRO/HERMONE";
+    else if (empSection.includes("B/B") || empSection.includes("HEMA")) sectionKey = "BB/HEMA";
+    else if (empSection.includes("MICRO")) sectionKey = "MICRO/PARA";
+    else if (empSection.includes("REC")) sectionKey = "CHEM/REC";
+
+    // قراءة الأيام
+    dayColumns.forEach(dc => {
+      const val = cols[dc.index] ? cols[dc.index].toUpperCase() : "";
+      const dateKey = `${year}-${String(month).padStart(2,'0')}-${String(dc.day).padStart(2,'0')}`;
+      if (val === "M" || val === "E" || val === "N") {
+        if (!scheduleData[dateKey][sectionKey].includes(emp.id)) {
+          scheduleData[dateKey][sectionKey].push(emp.id);
+        }
+      }
+    });
+  }
+
+  currentMonth = `${year}-${String(month).padStart(2,'0')}`;
+
+  document.getElementById("scheduleStatus").innerHTML = `
+    <div class="alert-box success">
+      ✅ تم رفع الجدول بنجاح. عدد الموظفين المطابقين: <b>${matchedCount}</b> من أصل <b>${lines.length - 1}</b>
+      <br>عدد الأيام: <b>${dayColumns.length}</b>
+    </div>
+  `;
+
+  analyzeSchedule();
+}
+
+function loadSampleSchedule() {
+  // جدول تجريبي بسيط
+  const year = 2026, month = 10;
+  scheduleData = {};
+  for (let d = 1; d <= 31; d++) {
+    const dateKey = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    scheduleData[dateKey] = { "CHEM/VIRO/HERMONE": [], "BB/HEMA": [], "MICRO/PARA": [], "CHEM/REC": [] };
+  }
+
+  employees.forEach(emp => {
+    for (let d = 1; d <= 31; d++) {
+      const dateKey = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      // نظام بسيط: M للجميع ما عدا 4 شفتات
+      let val = "M";
+      if (emp.id === "7219250" || emp.id === "7221389" || emp.id === "0123074" || emp.id === "7241475" || emp.id === "7670368") {
+        // شفت: 5 أيام عمل، 15 يوم أوف
+        const cycle = (d - 1) % 20;
+        val = cycle < 5 ? "E" : "O";
+      }
+      if (val === "M" || val === "E" || val === "N") {
+        scheduleData[dateKey][emp.section].push(emp.id);
+      }
+    }
+  });
+
+  currentMonth = `${year}-${String(month).padStart(2,'0')}`;
+  document.getElementById("scheduleStatus").innerHTML = `<div class="alert-box success">✅ تم تحميل الجدول التجريبي</div>`;
+  analyzeSchedule();
+}
+
+function clearSchedule() {
+  scheduleData = {};
+  currentMonth = "";
+  document.getElementById("scheduleStatus").innerHTML = `<div class="alert-box danger">🗑️ تم مسح الجدول</div>`;
+  document.getElementById("scheduleResult").innerHTML = "";
+}
+
+/* ============================================================
+   5. تحليل الأمان
+   ============================================================ */
+function analyzeSchedule() {
+  const container = document.getElementById("scheduleResult");
+  if (Object.keys(scheduleData).length === 0) {
+    container.innerHTML = `<div class="alert-box danger">⚠️ الرجاء رفع الجدول أولاً</div>`;
+    return;
+  }
+
+  let html = `<table><thead><tr>
+    <th>التاريخ</th>
+    <th>كيمياء + فيروسات + هرمونات</th>
+    <th>بنك الدم + هيماتولوجي</th>
+    <th>ميكرو + بارا</th>
+    <th>CHEM/REC</th>
+    <th>الحالة</th>
+  </tr></thead><tbody>`;
+
+  Object.keys(scheduleData).sort().forEach(date => {
+    const day = scheduleData[date];
+    let overallStatus = "green";
+    let row = `<tr><td>${date}</td>`;
+
+    ["CHEM/VIRO/HERMONE", "BB/HEMA", "MICRO/PARA", "CHEM/REC"].forEach(sec => {
+      const count = day[sec] ? day[sec].length : 0;
+      const min = sectionMin[sec];
+      let cls = "status-green";
+      if (count < min) { cls = "status-red"; overallStatus = "red"; }
+      else if (count === min) { cls = "status-yellow"; if (overallStatus !== "red") overallStatus = "yellow"; }
+      row += `<td class="${cls}">${count} / ${min}</td>`;
+    });
+
+    const statusIcon = overallStatus === "green" ? "🟢 آمن" : overallStatus === "yellow" ? "🟡 حذر" : "🔴 خطر";
+    row += `<td class="status-${overallStatus}">${statusIcon}</td></tr>`;
+    html += row;
+  });
+
+  html += `</tbody></table>`;
+  container.innerHTML = html;
+}
+
+/* ============================================================
+   6. عرض الموظفين
+   ============================================================ */
+function renderEmployees() {
+  const filter = document.getElementById("filterSection").value;
+  const tbody = document.querySelector("#empTable tbody");
+  tbody.innerHTML = "";
+  employees.filter(e => filter === "all" || e.section === filter).forEach((emp, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i+1}</td>
+      <td>${emp.name}</td>
+      <td>${emp.id}</td>
+      <td>${emp.section}</td>
+      <td>${emp.role}</td>
+      <td>${emp.emergency - emp.usedEmergency} / ${emp.emergency}</td>
+      <td>${emp.annual - emp.usedAnnual} / ${emp.annual}</td>
+      <td><button onclick="quickLeave('${emp.id}')">📝 طلب إجازة</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ============================================================
+   7. محاكاة الإجازة + خصم من الرصيد + تسجيل
+   ============================================================ */
+function simulateLeave() {
+  if (Object.keys(scheduleData).length === 0) {
+    document.getElementById("leaveResult").innerHTML = `<div class="alert-box danger">⚠️ الرجاء رفع الجدول أولاً قبل طلب أي إجازة</div>`;
+    return;
+  }
+
+  const empId = document.getElementById("leaveEmp").value;
+  const type = document.getElementById("leaveType").value;
+  const from = document.getElementById("leaveFrom").value;
+  const to = document.getElementById("leaveTo").value;
+  const emp = employees.find(e => e.id === empId);
+  const result = document.getElementById("leaveResult");
+
+  if (!from || !to) { result.innerHTML = `<div class="alert-box danger">⚠️ الرجاء تحديد التواريخ</div>`; return; }
+  if (new Date(from) > new Date(to)) { result.innerHTML = `<div class="alert-box danger">⚠️ تاريخ البداية بعد تاريخ النهاية</div>`; return; }
+
+  const d1 = new Date(from), d2 = new Date(to);
+  const days = Math.ceil((d2 - d1) / (1000*60*60*24)) + 1;
+
+  // التحقق من الرصيد
+  let balanceOk = true, balanceMsg = "";
+  const availableEmergency = emp.emergency - emp.usedEmergency;
+  const availableAnnual = emp.annual - emp.usedAnnual;
+
+  if (type === "emergency" && availableEmergency < days) { balanceOk = false; balanceMsg = `رصيد الاضطرارية غير كافٍ (المتاح: ${availableEmergency})`; }
+  if (type === "annual" && availableAnnual < days) { balanceOk = false; balanceMsg = `رصيد الاعتيادية غير كافٍ (المتاح: ${availableAnnual})`; }
+  if (type === "annual" && days > 15) { balanceOk = false; balanceMsg = "لا يمكن طلب أكثر من 15 يوماً اعتيادياً في الطلب الأول"; }
+
+  // تحليل الأثر
+  let riskDays = [];
+  let current = new Date(d1);
+  while (current <= d2) {
+    const key = current.toISOString().split("T")[0];
+    if (scheduleData[key]) {
+      const day = scheduleData[key];
+      ["CHEM/VIRO/HERMONE", "BB/HEMA", "MICRO/PARA", "CHEM/REC"].forEach(sec => {
+        if (day[sec] && day[sec].includes(empId)) {
+          const after = day[sec].filter(id => id !== empId).length;
+          if (after < sectionMin[sec]) {
+            riskDays.push({date:key, section:sec, after, min:sectionMin[sec]});
+          }
+        }
+      });
+    }
+    current.setDate(current.getDate() + 1);
+  }
+
+  // بناء النتيجة
+  let html = `<div class="alert-box ${riskDays.length > 0 ? 'danger' : 'success'}">`;
+  html += `<b>الموظف:</b> ${emp.name} (${emp.section})<br>`;
+  html += `<b>نوع الإجازة:</b> ${type === "emergency" ? "اضطرارية" : "اعتيادية"}<br>`;
+  html += `<b>المدة:</b> ${days} يوم (${from} إلى ${to})<br>`;
+  html += `<b>الرصيد المتاح:</b> ${type === "emergency" ? availableEmergency : availableAnnual} يوم<br><br>`;
+
+  if (!balanceOk) {
+    html += `<b style="color:#c0392b;">❌ ${balanceMsg}</b><br>`;
+  } else if (riskDays.length > 0) {
+    html += `<b style="color:#c0392b;">🔴 تحذير: هذه الإجازة ستسبب خطراً في الأيام التالية:</b><br>`;
+    riskDays.slice(0, 10).forEach(r => {
+      html += `- ${r.date} → ${r.section}: سيصبح ${r.after} (الحد الأدنى ${r.min})<br>`;
+    });
+    if (riskDays.length > 10) html += `<i>... و ${riskDays.length - 10} يوم آخر</i><br>`;
+    html += `<br><b>الحل:</b> يجب تأمين بديل. اختر المغطي أدناه ثم اطبع الإقرار.`;
+  } else {
+    html += `<b style="color:#27ae60;">✅ الإجازة آمنة. لا يوجد تأثير على سير العمل.</b>`;
+  }
+  html += `</div>`;
+
+  // إذا كان هناك خطر، اعرض خيار المغطي وزر الطباعة + زر الاعتماد
+  if (riskDays.length > 0 && balanceOk) {
+    const sameSectionEmps = employees.filter(e => e.id !== empId && e.section === emp.section && e.role !== "مرجع طبي + جودة");
+    html += `<div class="row">
+      <label>الموظف البديل (المغطي): 
+        <select id="coverEmp">
+          ${sameSectionEmps.map(e => `<option value="${e.id}">${e.name}</option>`).join("")}
+        </select>
+      </label>
+      <button class="warning" onclick="printCoverForm('${empId}', document.getElementById('coverEmp').value, '${from}', '${to}')">🖨️ طباعة إقرار التعهد</button>
+      <button class="success" onclick="approveLeave('${empId}', '${type}', '${from}', '${to}', ${days}, document.getElementById('coverEmp').value)">✅ اعتماد الإجازة وخصمها من الرصيد</button>
+    </div>`;
+  } else if (balanceOk && riskDays.length === 0) {
+    html += `<div class="row">
+      <button class="success" onclick="approveLeave('${empId}', '${type}', '${from}', '${to}', ${days}, '')">✅ اعتماد الإجازة وخصمها من الرصيد</button>
+    </div>`;
+  }
+
+  result.innerHTML = html;
+}
+
+/* ============================================================
+   8. اعتماد الإجازة + خصم الرصيد + تسجيل في السجل
+   ============================================================ */
+function approveLeave(empId, type, from, to, days, coverId) {
+  const emp = employees.find(e => e.id === empId);
+  const cover = coverId ? employees.find(e => e.id === coverId) : null;
+
+  // خصم من الرصيد
+  if (type === "emergency") emp.usedEmergency += days;
+  else emp.usedAnnual += days;
+
+  // تسجيل في السجل
+  leaveLog.push({
+    empId: emp.id,
+    empName: emp.name,
+    type: type === "emergency" ? "اضطرارية" : "اعتيادية",
+    from: from,
+    to: to,
+    days: days,
+    coverName: cover ? cover.name : "—",
+    coverId: cover ? cover.id : "",
+    date: new Date().toLocaleDateString("ar-SA")
+  });
+
+  // تحديث الواجهة
+  renderEmployees();
+  renderLog();
+  document.getElementById("leaveResult").innerHTML = `<div class="alert-box success">✅ تم اعتماد الإجازة وخصمها من الرصيد بنجاح</div>`;
+}
+
+/* ============================================================
+   9. عرض سجل الإجازات
+   ============================================================ */
+function renderLog() {
+  const tbody = document.querySelector("#logTable tbody");
+  tbody.innerHTML = "";
+  if (leaveLog.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" style="color:#999;">لا توجد إجازات مسجلة</td></tr>`;
+    return;
+  }
+  leaveLog.forEach((log, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i+1}</td>
+      <td>${log.empName}</td>
+      <td>${log.type}</td>
+      <td>${log.from}</td>
+      <td>${log.to}</td>
+      <td>${log.days}</td>
+      <td>${log.coverName}</td>
+      <td>${log.date}</td>
+      <td><button class="danger" onclick="cancelLeave(${i})">🗑️ إلغاء</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function cancelLeave(index) {
+  const log = leaveLog[index];
+  const emp = employees.find(e => e.id === log.empId);
+  if (log.type === "اضطرارية") emp.usedEmergency -= log.days;
+  else emp.usedAnnual -= log.days;
+  leaveLog.splice(index, 1);
+  renderEmployees();
+  renderLog();
+}
+
+function clearLog() {
+  if (confirm("هل أنت متأكد من مسح كل السجل؟")) {
+    // إعادة الرصيد
+    leaveLog.forEach(log => {
+      const emp = employees.find(e => e.id === log.empId);
+      if (log.type === "اضطرارية") emp.usedEmergency -= log.days;
+      else emp.usedAnnual -= log.days;
+    });
+    leaveLog = [];
+    renderEmployees();
+    renderLog();
+  }
+}
+
+/* ============================================================
+   10. طباعة إقرار التعهد A4
+   ============================================================ */
+function printCoverForm(empId, coverId, from, to) {
+  const emp = employees.find(e => e.id === empId);
+  const cover = employees.find(e => e.id === coverId);
+  if (!cover) { alert("الرجاء اختيار الموظف المغطي"); return; }
+  const today = new Date().toLocaleDateString("ar-SA");
+
+  const form = `
+    <div class="print-header">
+      <div class="logo-box">
+        <img src="logo.svg" alt="شعار تجمع عسير الصحي" />
+      </div>
+      <div class="title-box">
+        <h1>المملكة العربية السعودية</h1>
+        <h2>وزارة الصحة - تجمع عسير الصحي</h2>
+        <h2>مستشفى سبت العلايا العام</h2>
+        <p>قسم المختبر وبنك الدم</p>
+      </div>
+      <div class="info-box">
+        <div>التاريخ: ${today}</div>
+        <div>الرقم: ..........</div>
+      </div>
+    </div>
+
+    <h1 class="form-title">إقرار وتعهد تغطية عمل</h1>
+
+    <div class="field">أقر أنا / <span class="line">${cover.name}</span> (الرقم الوظيفي: ${cover.id})</div>
+    <div class="field">بأنني أتعهد بتغطية عمل زميلي / <span class="line">${emp.name}</span> (الرقم الوظيفي: ${emp.id})</div>
+    <div class="field">خلال فترة إجازته من تاريخ <span class="line">${from}</span> إلى تاريخ <span class="line">${to}</span></div>
+    <div class="field">في قسم: <span class="line">${emp.section}</span></div>
+    <div class="field">على أن أتحمل كامل المسؤولية عن سير العمل في القسم خلال هذه الفترة، وألتزم بجميع المهام الموكلة إليّ.</div>
+    <div class="field">وهذا إقرار مني بذلك.</div>
+
+    <div class="signatures">
+      <div>
+        <b>الموظف صاحب الإجازة</b><br><br>
+        الاسم: ${emp.name}<br><br>
+        التوقيع: ....................
+      </div>
+      <div>
+        <b>الموظف المغطي</b><br><br>
+        الاسم: ${cover.name}<br><br>
+        التوقيع: ....................
+      </div>
+      <div>
+        <b>مشرف الفنيين</b><br><br>
+        الاسم: بدر محمد القرني<br><br>
+        التوقيع: ....................
+      </div>
+    </div>
+
+    <div class="footer-note">
+      نسخة: ملف الموظف - نسخة: قسم المختبر - نسخة: الموارد البشرية
+    </div>
+  `;
+
+  document.getElementById("printFormContent").innerHTML = form;
+  window.print();
+}
+
+/* ============================================================
+   11. تهيئة الصفحة
+   ============================================================ */
+function init() {
+  const sel = document.getElementById("leaveEmp");
+  employees.forEach(e => {
+    const opt = document.createElement("option");
+    opt.value = e.id; opt.textContent = `${e.name} (${e.section})`;
+    sel.appendChild(opt);
+  });
+  document.getElementById("leaveFrom").value = "2026-10-05";
+  document.getElementById("leaveTo").value = "2026-10-10";
+  renderEmployees();
+  renderLog();
+}
+
+function quickLeave(id) {
+  document.getElementById("leaveEmp").value = id;
+  document.querySelectorAll(".card")[3].scrollIntoView({behavior:"smooth"});
+}
+
+init();
+</script>
+</body>
+</html>
