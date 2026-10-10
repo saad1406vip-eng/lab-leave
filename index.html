@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab Leave - إجازات المختبر</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div>
+      <h1>Lab Leave <span class="ar">| إجازات المختبر</span></h1>
+      <p>مستشفى سبت العلايا العام - قسم المختبر وبنك الدم</p>
+    </div>
+    <div class="actions">
+      <button onclick="openSettings()">⚙️ الإعدادات</button>
+      <button onclick="openArchive()">📚 الأرشيف</button>
+    </div>
+  </header>
+
+  <div class="card">
+    <h2><span class="num">1</span> رفع الجداول الشهرية</h2>
+    <div class="alert info" style="margin-top:0;">
+      يمكنك رفع <b>ملفات متعددة</b> دفعة واحدة. سيتم استنتاج الشهر من اسم الملف تلقائياً (مثال: <code>Laboratory_Schedule_11-2026.csv</code>).
+    </div>
+    <div class="file-upload">
+      <input type="file" id="scheduleFile" accept=".csv,.txt,.xlsx,.xls" multiple onchange="handleScheduleUpload(event)">
+      <label for="scheduleFile">📁 اضغط لرفع ملفات الجدول (CSV أو Excel)</label>
+      <div class="hint">الصيغ المدعومة: .csv، .txt، .xlsx، .xls — يمكن اختيار عدة ملفات</div>
+    </div>
+    <div class="row" style="margin-top:12px;">
+      <button class="ghost" onclick="loadSampleSchedule()">📥 جدول تجريبي</button>
+      <button class="danger" onclick="clearAllSchedules()">🗑️ مسح كل الجداول</button>
+    </div>
+    <div id="scheduleStatus"></div>
+    <h3 style="color:#1a3a5c; margin-top:20px; font-size:14px;">📅 الجداول المرفوعة:</h3>
+    <div id="uploadedSchedulesList"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span> فريق العمل</h2>
+    <div class="row">
+      <label style="width:100%;">القسم:
+        <select id="filterSection" onchange="renderEmployees()">
+          <option value="all">الكل</option>
+        </select>
+      </label>
+      <button class="ghost" onclick="exportAll()" style="width:100%;">📤 تصدير السجل (CSV)</button>
+    </div>
+    <table id="empTable">
+      <thead>
+        <tr>
+          <th>#</th><th>الاسم</th><th>القسم</th><th>الحالة</th>
+          <th>اضطرارية</th><th>اعتيادية</th><th>إجراء</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span> طلب إجازة</h2>
+    <div style="margin-bottom:10px;">
+      <label style="width:100%;">الموظف:
+        <select id="leaveEmp"></select>
+      </label>
+    </div>
+    <div style="margin-bottom:10px;">
+      <label style="width:100%;">نوع الإجازة:
+        <select id="leaveType">
+          <option value="emergency">اضطرارية</option>
+          <option value="annual">اعتيادية</option>
+        </select>
+      </label>
+    </div>
+    <div style="margin-bottom:10px;">
+      <label style="width:100%; font-weight:600; margin-bottom:6px; display:block;">📅 فترة الإجازة:</label>
+      <div class="date-fields">
+        <div class="date-field">
+          <label>من تاريخ:</label>
+          <input type="date" id="leaveFrom" onchange="updateDateSummary()">
+        </div>
+        <div class="date-field">
+          <label>إلى تاريخ:</label>
+          <input type="date" id="leaveTo" onchange="updateDateSummary()">
+        </div>
+      </div>
+      <div class="date-summary" id="dateSummary"></div>
+    </div>
+    <button onclick="simulateLeave()" style="width:100%; padding:14px; font-size:15px;">🔎 فحص الطلب</button>
+    <div id="leaveResult"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span> سجل الإجازات المعتمدة</h2>
+    <div id="logSummary"></div>
+    <table id="logTable">
+      <thead>
+        <tr>
+          <th>#</th><th>الموظف</th><th>النوع</th><th>من</th><th>إلى</th>
+          <th>الأيام</th><th>المغطي</th><th>الحالة</th><th>إجراء</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div class="row" style="margin-top:10px;">
+      <button class="danger" onclick="clearLog()">🗑️ مسح السجل</button>
+      <button class="warning" onclick="startNewYear()">🔄 بدء سنة جديدة</button>
+    </div>
+  </div>
+</div>
+
+<!-- نافذة الإعدادات -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <h3>
+      ⚙️ الإعدادات
+      <button class="close-x" onclick="closeSettings()">✖</button>
+    </h3>
+    
+    <div class="settings-tabs">
+      <button class="settings-tab active" onclick="switchTab('employees')">👥 الموظفون</button>
+      <button class="settings-tab" onclick="switchTab('sections')">📂 الأقسام</button>
+      <button class="settings-tab" onclick="switchTab('groups')">📊 القروبات</button>
+      <button class="settings-tab" onclick="switchTab('schedules')">📅 الجداول</button>
+      <button class="settings-tab" onclick="switchTab('rotation')">🔄 الروتيشن</button>
+      <button class="settings-tab" onclick="switchTab('editRotation')">✏️ تعديل الروتيشن</button>
+      <button class="settings-tab" onclick="switchTab('ramadan')">🌙 رمضان</button>
+      <button class="settings-tab" onclick="switchTab('manualCover')">📝 إقرار اختياري</button>
+    </div>
+    
+    <div class="settings-tab-content active" id="tab-employees">
+      <div class="alert info">إدارة فريق العمل (إضافة، تعديل، حذف).</div>
+      <button class="success" onclick="openAddEmployee()" style="width:100%; margin-bottom:10px;">➕ إضافة موظف جديد</button>
+      <div id="employeesList"></div>
+    </div>
+    
+    <div class="settings-tab-content" id="tab-sections">
+      <div class="alert info">إدارة أقسام المختبر (إضافة، تعديل، حذف).</div>
+      <button class="success" onclick="openAddSection()" style="width:100%; margin-bottom:10px;">➕ إضافة قسم جديد</button>
+      <div id="sectionsList"></div>
+    </div>
+    
+    <div class="settings-tab-content" id="tab-groups">
+      <div class="alert info">إدارة القروبات (إضافة، تعديل، حذف).</div>
+      <button class="success" onclick="openAddGroup()"div style="width:100%; margin-bottom: class10px;">➕ إضافة قروب جديد</button>
+      <div id="="groupsList"></div>
+    </div>
+    
+   alert <div class="settings-tab-content info" id="tab-schedules">
+      <div class="alert info">عرض وإدارة الجداول الشهرية المرفوعة.</div>
+      <div id="settingsSchedulesList"></div>
+    </div>
+    
+    <div class="settings-tab-content" id="tab-rotation">
+      <">عرض الروتيشن للأشهر القادمة (6 أشهر).</div>
+      <div class="rotation-view" id="rotationView"></div>
+    </div>
+    
+    <div class="settings-tab-content" id="tab-editRotation">
+      <div class="alert info">اختر الشهر لتعديل شفتاته.</div>
+      <div class="month-selector" id="monthSelector"></div>
+      <div id="monthEditPanels"></div>
+      <div class="row" style="margin-top:15px;">
+        <button class="success" onclick="saveRotationEdits()" style="width:100%;">💾 حفظ التعديلات</button>
+        <button class="ghost" onclick="resetRotationToDefault()" style="width:100%;">🔄 استعادة الافتراضي</button>
+      </div>
+      <div id="rotationEditStatus"></div>
+    </div>
+    
+    <div class="settings-tab-content" id="tab-ramadan">
+      <div class="alert info">أوقات شفتات رمضان (6 ساعات).</div>
+      <div class="form-grid full">
+        <div class="form-field">
+          <label>R1 (بديل M) - من:</label>
+          <input type="text" id="ramadanR1" value="10:00 صباحاً → 4:00 عصراً" readonly>
+        </div>
+        <div class="form-field">
+          <label>R2 (وقت الذروة) - من:</label>
+          <input type="text" id="ramadanR2" value="4:00 عصراً → 10:00 مساءً" readonly>
+        </div>
+        <div class="form-field">
+          <label>R3 (وقت الذروة - بديل E) - من:</label>
+          <input type="text" id="ramadanR3" value="10:00 مساءً → 4:00 صباحاً" readonly>
+        </div>
+        <div class="form-field">
+          <label>R4 (بديل N) - من:</label>
+          <input type="text" id="ramadanR4" value="4:00 صباحاً → 10:00 صباحاً" readonly>
+        </div>
+      </div>
+      <div class="alert warning">
+        <b>ملاحظات:</b><br>
+        • R2 و R3 = وقت الذروة.<br>
+        • إذا كان في R2 أو R3 موظف واحد فقط → <b>رفض الإجازة</b>.<br>
+        • إذا كان في R2 أو R3 موظفان → <b>إقرار تعهد</b>.<br>
+        • R1 و R4 = شفتات عادية (نفس قواعد M و N).
+      </div>
+    </div>
+    
+    <div class="settings-tab-content" id="tab-manualCover">
+      <div class="alert info">
+        <b>إقرار تعهد اختياري:</b> استخدم هذا القسم لطباعة إقرار تغطية بين موظفين في أي وقت.
+      </div>
+      <div class="form-grid full">
+        <div class="form-field">
+          <label>الموظف صاحب العمل *</label>
+          <select id="manualEmp"></select>
+        </div>
+        <div class="form-field">
+          <label>الموظف المغطي *</label>
+          <select id="manualCover"></select>
+        </div>
+        <div class="form-field">
+          <label>من تاريخ *</label>
+          <input type="date" id="manualFrom">
+        </div>
+        <div class="form-field">
+          <label>إلى تاريخ *</label>
+          <input type="date" id="manualTo">
+        </div>
+        <div class="form-field">
+          <label>السبب / ملاحظات (اختياري)</label>
+          <input type="text" id="manualNotes" placeholder="مثال: تغطية شفت مسائي">
+        </div>
+      </div>
+      <button class="success" onclick="printManualCover()" style="width:100%; margin-top:15px; padding:14px;">🖨️ طباعة إقرار التعهد</button>
+      <div id="manualCoverStatus"></div>
+    </div>
+  </div>
+</div>
+
+<!-- نافذة إضافة/تعديل موظف -->
+<div class="modal-overlay" id="empFormModal">
+  <div class="modal" style="max-width:600px;">
+    <h3>
+      <span id="empFormTitle">➕ إضافة موظف</span>
+      <button class="close-x" onclick="closeEmpForm()">✖</button>
+    </h3>
+    <div class="form-grid">
+      <div class="form-field">
+        <label>الاسم الكامل *</label>
+        <input type="text" id="empFormName" placeholder="مثال: محمد أحمد">
+      </div>
+      <div class="form-field">
+        <label>الرقم الوظيفي *</label>
+        <input type="text" id="empFormId" placeholder="مثال: 0123456">
+      </div>
+      <div class="form-field">
+        <label>القسم *</label>
+        <select id="empFormSection"></select>
+      </div>
+      <div class="form-field">
+        <label>القروب (اختياري)</label>
+        <select id="empFormGroup">
+          <option value="">بدون قروب</option>
+        </select>
+      </div>
+    </div>
+    <div class="row" style="margin-top:15px;">
+      <button class="success" onclick="saveEmployee()" style="width:100%;">💾 حفظ</button>
+      <button class="ghost" onclick="closeEmpForm()" style="width:100%;">إلغاء</button>
+    </div>
+    <div id="empFormStatus"></div>
+  </div>
+</div>
+
+<!-- نافذة إضافة/تعديل قسم -->
+<div class="modal-overlay" id="sectionFormModal">
+  <div class="modal" style="max-width:500px;">
+    <h3>
+      <span id="sectionFormTitle">➕ إضافة قسم</span>
+      <button class="close-x" onclick="closeSectionForm()">✖</button>
+    </h3>
+    <div class="form-grid full">
+      <div class="form-field">
+        <label>اسم القسم *</label>
+        <input type="text" id="sectionFormName" placeholder="مثال: CHEM/VIRO/HERMONE">
+      </div>
+      <div class="form-field">
+        <label>الحد الأدنى الآمن *</label>
+        <input type="number" id="sectionFormMin" min="1" value="1">
+      </div>
+    </div>
+    <div class="row" style="margin-top:15px;">
+      <button class="success" onclick="saveSection()" style="width:100%;">💾 حفظ</button>
+      <button class="ghost" onclick="closeSectionForm()" style="width:100%;">إلغاء</button>
+    </div>
+    <div id="sectionFormStatus"></div>
+  </div>
+</div>
+
+<!-- نافذة إضافة/تعديل قروب -->
+<div class="modal-overlay" id="groupFormModal">
+  <div class="modal" style="max-width:600px;">
+    <h3>
+      <span id="groupFormTitle">➕ إضافة قروب</span>
+      <button class="close-x" onclick="closeGroupForm()">✖</button>
+    </h3>
+    <div class="form-grid full">
+      <div class="form-field">
+        <label>اسم القروب *</label>
+        <input type="text" id="groupFormName" placeholder="مثال: القروب 4">
+      </div>
+    </div>
+    <div class="row" style="margin-top:15px;">
+      <button class="success" onclick="saveGroup()" style="width:100%;">💾 حفظ</button>
+      <button class="ghost" onclick="closeGroupForm()" style="width:100%;">إلغاء</button>
+    </div>
+    <div id="groupFormStatus"></div>
+  </div>
+</div>
+
+<!-- نافذة اكتشاف الموظفين الجدد -->
+<div class="modal-overlay" id="newDetectedModal">
+  <div class="modal" style="max-width:600px;">
+    <h3>
+      🔔 موظفون / أقسام جديدة مكتشفة
+      <button class="close-x" onclick="closeNewDetected()">✖</button>
+    </h3>
+    <div class="alert warning">
+      تم اكتشاف العناصر التالية في الجداول المرفوعة وهي غير موجودة في النظام. هل تريد إضافتها؟
+    </div>
+    <div id="newDetectedContent"></div>
+    <div class="row" style="margin-top:15px;">
+      <button class="success" onclick="addAllDetected()" style="width:100%;">✅ إضافة الكل</button>
+      <button class="ghost" onclick="closeNewDetected()" style="width:100%;">❌ تجاهل</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="empModal">
+  <div class="modal">
+    <h3>تفاصيل الموظف <button class="close-x" onclick="closeModal()">✖</button></h3>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="archiveModal">
+  <div class="modal">
+    <h3>📚 أرشيف السنوات السابقة <button class="close-x" onclick="closeArchive()">✖</button></h3>
+    <div id="archiveContent"></div>
+  </div>
+</div>
+
+<script src="script1.js"></script>
+<script src="script2.js"></script>
+</body>
+</html>
